@@ -1,0 +1,24 @@
+Project summary: After death, a body becomes unclaimed when the coroner's office cannot find any relatives to claim the body or when 
+relatives are found, nobody is willing to come and get it. The number of unclaimed bodies is on the rise. In early 2016, the Massachusetts
+state medical examiner's office worried it might run out of room to store the bodies, and nearly doubled the amount it pays to funeral
+homes to take the unclaimed and perform funerals. The incidence of unclaimed bodies is not just a social cost upon death, it is
+symptomatic of the rise of social problems in life, from economic strain to the social isolation of the elderly. Some forensics journals
+have started to characterize who is at greater risk of being unclaimed. We look at reasons why these people, usually male, tend to be
+unclaimed. After linking county level unclaimed persons databases with census data and overall mortality data from the CDC, we can test
+the following hypotheses:
+1. The number of unclaimed bodies are on the rise because mortality rates are on the rise. 
+2. The number of unclaimed bodies are on the rise because of increased levels of homelessness or economic strain.
+3. The number of unclaimed bodies are on the rise because of changes in kinship patterns parallel to the rise of single motherhood that leads to increasingly more socially detached single old men.
+
+Background news articles: 
+https://journalistsresource.org/studies/government/unclaimed-bodies-burial-medical-examiner-cremation
+https://www.bostonglobe.com/metro/2016/02/19/fearing-backup-unclaimed-bodies-state-raises-payment-funeral-homes/eTKDaHkZ5qaOXGS4QTyN7H/story.html
+https://worcestermag.com/2014/03/20/unclaimed-dead-buried-alone-massachusetts/21843
+
+Next steps:
+Call claimus asking if they have other data they are willing to share but aren't on their website (particularly, cause of death)
+---- if this isn't possible, perhaps it actually would be possible to figure it out using county level death data from CDC?
+Call claimus asking what they do about bodies that do get claimed. Do they take them down? Is there a way to see the ones that got taken down?
+Call claimus asking whether there is a way to see whether kin was found and nobody wanted the body or whether no kin was found
+Scrape the claimus data and merge with CDC mortality data and census county level data 
+Literature review 
