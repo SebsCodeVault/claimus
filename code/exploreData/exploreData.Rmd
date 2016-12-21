@@ -1,0 +1,155 @@
+---
+title: "exploreData"
+author: "Sebastian Steffen"
+date: "December 20, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r setup}
+# Libraries
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+# Paths
+setwd("C:/Projects/claimus/claimus")
+```
+
+```{r importData}
+# Read base data
+data = read.csv("C:/Projects/claimus/claimus/data/2016_12_20/data.csv", na.strings=c("", "NA"))
+df = data %>% mutate(date_found = as.Date(date_found, '%B %d, %Y'),
+                     year_found = as.integer(format(date_found, '%Y')),
+                     month_found = as.integer(format(date_found, '%m')),
+                     is_winter = month_found > 10 | month_found < 3)
+```
+
+```{r summaryStats}
+# Total cases
+nrow(data)
+# Year Range
+min(df$year_found, na.rm = TRUE)
+max(df$year_found, na.rm = TRUE)
+length(unique(df$year_found))
+# County Range
+length(unique(df$county))
+# Average obs per county per year
+df.d1 = df %>% group_by(year_found, county) %>%
+  summarise(n = n()) 
+df.d2 = df.d1 %>% group_by(county) %>%
+  summarise(mean.n = mean(n))
+# Missing variables of interest: lastname, firstname, and kin are never missing.
+df.d3 = df %>% mutate(
+  last.miss = is.na(last_name),
+  first.miss = is.na(first_name),
+  kin.miss = is.na(next_of_kin_status)) %>% 
+  group_by(last.miss, first.miss, kin.miss) %>%
+  summarise(n = n())
+# Missing race, age, gender total and per year NEED TO REPLACE NA's.
+df.d4 = df %>% mutate(
+  race.miss = is.na(race),
+  ethnicity.miss = is.na(ethnicity),
+  yob.miss = is.na(year_of_birth),
+  sex.miss = is.na(sex)) %>% group_by(year_found) %>%
+  summarise(n = n(),
+            sum.race.miss = sum(race.miss),
+            sum.ethnicity.miss = sum(ethnicity.miss),
+            sum.yob.miss = sum(yob.miss),
+            sum.sex.miss = sum(sex.miss),
+            perc.race.miss = sum.race.miss/n,
+            perc.ethnicity.miss = sum.ethnicity.miss/n,
+            perc.yob.miss = sum.yob.miss/n,
+            perc.sex.miss = sum.sex.miss/n)
+# Race, gender per year
+df.d5 = df %>% mutate(
+            is.race.asian = race=="Asian or Pacific Islander",
+            is.race.black = race=="Black/African American",
+            is.race.nativeAmerican = race=="Native American",
+            is.race.other = race=="Other",
+            is.race.unsure = race=="Unsure",
+            is.race.white = race=="White",
+            is.ethnicity.hispanic = ethnicity=="Hispanic/Latino",
+            is.ethnicity.other = ethnicity=="Other",
+            is.sex.female = sex=="Female",
+            is.sex.male = sex=="Male") %>%
+  group_by(year_found) %>%
+  summarise(n = n(),
+            sum.race.asian = sum(is.race.asian),
+            sum.race.black = sum(is.race.black),
+            sum.race.nativeAmerican = sum(is.race.nativeAmerican),
+            sum.race.other = sum(is.race.other),
+            sum.race.unsure = sum(is.race.unsure),
+            sum.race.white = sum(is.race.white),
+            sum.ethnicity.hispanic = sum(is.ethnicity.hispanic),
+            sum.ethnicity.other = sum(is.ethnicity.other),
+            sum.sex.female = sum(is.sex.female),
+            sum.sex.male = sum(is.sex.male),
+            
+            perc.race.asian = sum.race.asian/n,
+            perc.race.black = sum.race.black/n,
+            perc.race.nativeAmerican = sum.race.nativeAmerican/n,
+            perc.race.other = sum.race.other/n,
+            perc.race.unsure = sum.race.unsure/n,
+            perc.race.white = sum.race.white/n,
+            perc.ethnicity.hispanic = sum.ethnicity.hispanic/n,
+            perc.ethnicity.other = sum.ethnicity.other/n,
+            perc.is.sex.female = sum.sex.female/n,
+            perc.is.sex.male = sum.sex.male/n)
+
+```
+
+```{r graphs}
+doSave = TRUE
+### Histogram of year_found
+df.p1 = df %>% transmute(year_found = year_found) %>%
+filter(!is.na(year_found))
+
+p1 = ggplot(df.p1, aes(x=year_found)) + 
+geom_histogram(breaks=seq(2000, 2017, by=1)) +
+labs(title = "Histogram of Year Found") + 
+labs(x = "Year Found", y = "Count") +
+xlim(c(2004, 2017)) +
+theme_bw() 
+if(doSave) {
+  ggsave(filename = "paper/figures/shares_per_date.pdf", plot = p1, width = 8, height = 6)
+}
+### Stacked bar graph of cases per county per year (with some filtering) NEED TO ADD ZEROES FOR MISSING VALUES
+df.p2 = df %>% transmute(year_found, county) %>% 
+  filter(!is.na(year_found), year_found > 2004, year_found < 2017) %>%
+  group_by(year_found, county) %>%
+  summarize(n = n()) %>%
+  filter(n > 10)
+
+p2 = ggplot(df.p2, aes(year_found, fill = county)) + geom_bar()
+
+# Line graph of missing values over time (df.d4)
+df.p3 = melt(df.d4, id.vars = c("year_found")) %>% 
+  filter(variable != "n",
+         !grepl("sum", variable ),
+         year_found > 1970)
+p3 = ggplot(df.p3, aes(x = year_found, y=value, colour=variable)) + 
+  geom_line() + theme_bw()
+if(doSave) {
+  ggsave(filename = "paper/figures/missing_per_year.pdf", plot = p3, width = 8, height = 6)
+}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
