@@ -18,8 +18,12 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r setup}
 # Libraries
 library(dplyr)
-library(ggplot2)
 library(reshape2)
+library(ggplot2)
+library(ggmap)
+library(ggthemes)
+library(maptools)
+library(mapdata)
 # Paths
 setwd("C:/Projects/claimus/claimus")
 ```
@@ -142,7 +146,50 @@ if(doSave) {
   ggsave(filename = "paper/figures/missing_per_year.pdf", plot = p3, width = 8, height = 6)
 }
 
+# Map of Counties
+df.p4 = df %>% transmute(county = tolower(county), state = tolower(state)) %>% 
+  # Fix data errors
+  mutate(county = replace(county, (county == 'hampton city') & (state == 'virginia'), 'hampton'),
+                         county = replace(county, (county == 'newport news city') & (state == 'virginia'), 'newport news'),
+                         county = replace(county, (county == 'norfolk city') & (state == 'virginia'), 'norfolk'),
+                         county = replace(county, (county == 'virginia beach city') & (state == 'virginia'), 'virginia beach'),
+                         county = replace(county, (county == 'st. john the baptist') & (state == 'louisiana'), 'st john the baptist'),
+                         county = replace(county, (state == 'missouri') & (county == 'st. louis city'), 'st louis'),
+                         state = replace(state, (state == 'new york') & (county == 'belknap'), 'new hampshire')) %>% group_by(county, state) %>% 
+  summarise(num_cases = n()) %>% 
+  arrange(state)
+
+usa = map_data('usa')
+state = map_data('state')
+county = map_data('county') 
+# To search use:
+# %>% filter(grepl("missouri", region) & grepl("st louis"))
+               
+county1 = map_data('county') %>% filter(region%in%df.p4$state & subregion%in%df.p4$county) %>% inner_join(df.p4, by = c("region" = "state", "subregion" = "county"))
+#length(unique(county11$subregion))
+#length(unique(df$county))
+p4 = ggplot() + geom_map(data = county, map = county, 
+                         aes(x = long, y = lat, map_id = region), 
+                         color = "gray", fill = NA, size = 0.15)
+p4 = p4 + geom_map(data = county1, map = county1, 
+                         aes(map_id = region), 
+                         color = "red", fill = NA, size = 0.15)
+p4 = p4 + geom_map(data = state, map = state, 
+                         aes(map_id = region), 
+                         color = "slateblue1", fill = NA, size = 0.5)
+p4 = p4 + geom_map(data = usa, map = usa, 
+                         aes(map_id = region), 
+                         color = "slateblue4", fill = NA, size = 1)
+p4 = p4 + coord_map("polyconic") + theme_map() + 
+  theme(plot.margin=margin(20,20,20,20), plot.title = element_text(hjust = 0)) +
+  ggtitle("Counties with ClaimUs.org data")
+p4
+if(doSave) {
+  ggsave(filename = "paper/figures/county_map.pdf", plot = p4, width = 8, height = 6)
+}
+
 ```
+
 
 ## Including Plots
 
